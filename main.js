@@ -2,6 +2,8 @@
 
       window.globals = {neighbors:0, strokeWidth:5, gapWidth:2, strokeColor:'black', showIntersections:true, independentHandles: false, smooth:false, isomorphy:true};
       var polynomial = document.getElementById('alexanderPolynomial');
+      var linkingContainer = document.getElementById('linkingContainer');
+      var linking = document.getElementById('linkingNumbers');
       var jonesPolynomial = document.getElementById('jonesPolynomial');
       var candidates = document.getElementById('candidates');
       var candidates_p = document.getElementById('candidates-p');
@@ -130,6 +132,7 @@
         var dl = document.createElement("a");
         dl.setAttribute("href", dataStr);
         dl.setAttribute("download", "knot.knottingham");
+        document.body.appendChild(dl);
         dl.click();
         document.body.removeChild(dl);
       }
@@ -162,20 +165,32 @@
           button.innerHTML = ">2 crossings needed.";
           return;
         }
+        // The re-layout button reads the current diagram; multi-component links go through their PD code
+        if (button.id == 'orthButton' && window.globals.getNumComponents() > 1) {
+          code = window.globals.toPD();
+          if (code == null) {
+            button.innerHTML = "Each component needs a crossing.";
+            return;
+          }
+          codeType = "PD";
+        }
         smoothing.checked = false;
         await getPyodide(button);
-        
 
+
+        var linkConstructor;
         if (codeType == "DT") {
           if (code == "") {
             code = "4 6 2";
           }
-          linkString = "DT:[("+code.replaceAll(" ", ", ")+")]";
+          linkConstructor = '"DT:[(' + code.replaceAll(" ", ", ") + ')]"';
         } else if (codeType == "Rolfsen") {
           if (code == "") {
             code = "10_161";
           }
-          linkString = code;
+          linkConstructor = '"' + code + '"';
+        } else if (codeType == "PD") {
+          linkConstructor = '[tuple(c) for c in ' + code + ']';
         }
 
         try {
@@ -185,7 +200,7 @@
 
             from pyodide.ffi import to_js
 
-            l = Link("` + linkString + `")
+            l = Link(` + linkConstructor + `)
             o = OrthogonalLinkDiagram(l)
             to_js(o.plink_data())`);
           window.globals.fromSnappy(geometry);
@@ -243,8 +258,23 @@
         executeRequest();
       }
 
+      function sageLinkCode(invariant) {
+        // Builds SageMath code computing an invariant of the current diagram:
+        // knots go through their DT code, links through their PD code.
+        if (window.globals.getNumComponents() > 1) {
+          var pd = window.globals.toPD();
+          if (pd == null) return null;
+          return 'L = Link(' + pd + ')\nprint(L.' + invariant + '())';
+        }
+        return 'K = Knots().from_dowker_code([' + dt.innerHTML + '])\nprint(K.' + invariant + '())';
+      }
+
       function getJones() {
-        const code = 'K = Knots().from_dowker_code([' + dt.innerHTML +'])\nprint(K.jones_polynomial())';
+        const code = sageLinkCode('jones_polynomial');
+        if (code == null) {
+          jonesButton.innerHTML = "Each component needs a crossing.";
+          return;
+        }
 
         runSage(code,function(result, jonesButton) {
           jonesPolynomial.innerHTML = "\\(" + "p_J(t)=" + result.replaceAll("*", "") + "\\)";
@@ -254,7 +284,11 @@
         },jonesButton);
       }
       function getHomfly() {
-        const code = 'K = Knots().from_dowker_code([' + dt.innerHTML +"])\nprint(K.homfly_polynomial())";
+        const code = sageLinkCode('homfly_polynomial');
+        if (code == null) {
+          homflyButton.innerHTML = "Each component needs a crossing.";
+          return;
+        }
 
         runSage(code,function(result, homflyButton) {
           document.getElementById('homflyContainer').style.display = "block";

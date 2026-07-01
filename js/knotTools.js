@@ -18,6 +18,32 @@ function gaussCode(intersectionWatcher) {
 	return out;
 }
 
+function gaussCodeLink(intersectionWatcher, componentOffset, numComponents) {
+	// Multi-component Gauss code: one sequence per component, using the same
+	// sign convention as gaussCode() and global crossing numbers.
+	var components = [];
+	for (var c = 0; c < numComponents; c++) components.push([]);
+
+	function addPassage(time, code) {
+		var c = Math.floor(time / componentOffset);
+		if (c >= numComponents) return;
+		components[c].push({time: time % componentOffset, code: code});
+	}
+
+	for (var i = 0; i < intersectionWatcher[2].length; i++) {
+		addPassage(intersectionWatcher[2][i], (i + 1) * (intersectionWatcher[1][i] ? 1 : -1));
+		addPassage(intersectionWatcher[3][i], (i + 1) * (intersectionWatcher[1][i] ? -1 : 1));
+	}
+
+	for (var c = 0; c < numComponents; c++) {
+		components[c].sort(function (a, b) { return a.time - b.time; });
+	}
+
+	return components.map(function (passages) {
+		return passages.map(function (p) { return p.code; }).join(",");
+	}).join("; ");
+}
+
 function dowkerThistlethwaiteCodeDebug(intersectionWatcher) {
 	const indices = intersectionWatcher[3].map((_, index) => index);
     indices.sort((indexA, indexB) => intersectionWatcher[3][indexA] - intersectionWatcher[3][indexB]);

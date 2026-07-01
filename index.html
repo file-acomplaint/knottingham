@@ -1,126 +1,166 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta charset="UTF-8">
-    <title> Knottingham</title>
-    <link rel="icon" href="https://fi-le.net/images/favicon.png">
-    <meta author content="fi-le">
-    <meta name="keywords" content="Knot Theory, Knottingham, Knots">
-    <script type="text/javascript" src="lib/paper.js"></script>
-    <script type="text/javascript" src="lib/BigInteger.min.js"></script>
-    <script type="text/javascript" src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script type="text/javascript" src="https://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+  <meta charset="UTF-8">
+  <title> Knottingham</title>
+  <link rel="icon" href="https://fi-le.net/images/favicon.png">
+  <meta author content="Lennart Finke">
+  <meta name="keywords" content="Knot Theory, Knottingham, Knots">
+  <script type="text/javascript" src="lib/paper.js"></script>
+  <script type="text/javascript" src="lib/BigInteger.min.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script type="text/javascript" src="https://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
 
-    <script type="text/javascript" src="js/polynomials.js"></script>
-    <script type="text/javascript" src="js/knotTools.js"></script>
-    <script type="text/paperscript" canvas="canvas" src="js/canvas.js"></script>
+  <script type="text/javascript" src="js/polynomials.js"></script>
+  <script type="text/javascript" src="js/knotTools.js"></script>
+  <script type="text/paperscript" canvas="canvas" src="js/canvas.js"></script>
 
-  
-    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+
+  <link rel="stylesheet" type="text/css" href="stylesheet.css">
 </head>
 
 <body>
 
-    <div style="text-align:center;">
-      <div style="margin:0px; padding:0px;">
-        <canvas id="canvas" width="1000px;" height="450px;"></canvas>
-        <p style="font-family: monospace;" id="log"></p>
-      </div>
-
-      <div style="margin:1%;">
-        <div style="display: grid;grid-template-columns: 1.5fr 1fr;align-items: center;">
-          <p><b>Alexander Polynomial:</b> <span id="alexanderPolynomial"></span></p>
-          <p style="display:none;" id="jonesContainer"><b>Jones Polynomial:</b> <span id="jonesPolynomial"></span></p>
-          <p style="display:none;" id="homflyContainer"><b>HOMFLY Polynomial:</b> <span id="homflyPolynomial" style="font-family:monospace;"></span></p>
-          <p><b>Gauss</b>: <span id="gauss" style="font-family: monospace;"></span> <br> <b>Dowker-Thislethwaite</b>: <span id="dt" style="font-family: monospace;"></span></p>
-            <p id="candidates-p"><b><!--Candidates with  \(<10\) Crossings:--></b>  <span id="candidates"></span></p>
-        </div>
-
-        <hr>
-        <p>
-          <button type="button" onclick="window.globals.draw(); isomorphy.checked = false; smoothing.checked = false; window.globals.switchIsomorphy(); window.globals.isomorphy = false;"><b>Draw from Scratch</b></button>
-          <button type="button" onclick="window.globals.select()">Show / Hide Bezier Handles</button>
-          <button type="button" onclick="window.globals.undo()">Undo</button>
-          <button type="button" onclick="window.globals.reflect()">Reflect</button>
-        </p>
-
-        <p>Force Smoothness: <input id="smoothing" type="checkbox" checked="true" onchange="window.globals.smooth = this.checked;">
-        | <button type="button" onclick="straighten()">Straighten</button>
-          <!--  <button type="button" onclick="flatten()">Flatten</button> -->
-          <button type="button" onclick="window.globals.simplify()">Simplify</button>
-          <button type="button" onclick="window.globals.makeAlternating()">Make Alternating</button>
-          <button type="button" onclick="orthogonalise(this, dt.innerHTML, 'DT', 'Orthogonalize', 'Error')" id="orthButton">Orthogonalize (slow)</button> <br>
-
-      </p>
-
-        <p>Drag Neighboring Points: <input id="dragging" type="checkbox" checked="false"  onchange="window.globals.neighbors = this.checked ? 2 : 0;"> | <b>Try reverting Non-Reidemeister moves:</b> <input type="checkbox" id="isomorphy" checked="true",  onchange="window.globals.isomorphy = this.checked; window.globals.switchIsomorphy();"></p>
-
-      <p>
-        Additional Invariants, calculated once: <button type="button" onclick="getJones()" id="jonesButton">Jones Polynomial</button>
-        <button type="button" onclick="getHomfly()" id="homflyButton">HOMFLY Polynomial</button>
-      </p>
-        <p><b>Styling:</b><br>
-          Gap Width: <input type="range" min="2" max="5" value="2" step="0.1" class="slider" onchange="window.globals.gapWidth = this.value; window.globals.updateStyle();"><br>
-          Stroke Width: <input type="range" min="1" max="10" value="3"  step="0.1" class="slider"  onchange="window.globals.strokeWidth = this.value; window.globals.updateStyle();"><br>
-          Show Intersections: <input type="checkbox" id="showIntersections" onchange="window.globals.showIntersections = this.checked;">
-          Drag Handles Independently: <input type="checkbox" id="dragIndependently" onchange="window.globals.independentHandles = this.checked;">
-
-        </p>
-        <hr>
-
-        <p><b>Exporting:</b>
-          <button type="button" onclick="toSVG();">To SVG</button>
-          <button type="button" onclick="toJSON();">To JSON</button>
-          <button type="button" onclick="toTikz(); this.innerHTML='Export to TikZ (Copied to Clipboard!);'">To TikZ</button> <br>
-          <b>Importing:</b>
-          <button onclick="orthogonalise(this, dtInput.value, 'DT', 'From DT code:', 'Error: Try again in the format `x y z ...`');">From DT code:</button> <input type="text" id="dtInput" placeholder="4 6 2"> 
-          <button onclick="orthogonalise(this, rolfsenInput.value, 'Rolfsen', 'From Rolfsen Table:', 'Error: Try again in the format x_y');">From Rolfsen Table:</button> <input type="text" id="rolfsenInput" placeholder="10_161"> 
-          <p>From Knottingham JSON: </p><input type="file" id="file" accept=".JSON,.json,.knottingham"name="Load a Knottingham JSON file" oninput="readJSON(this.files[0])">
-          
-        </p>
-      </div>
+  <div style="text-align:center;">
+    <div style="margin:0px; padding:0px;">
+      <canvas id="canvas" width="1000px;" height="450px;"></canvas>
+      <p style="font-family: monospace;" id="log"></p>
     </div>
 
-    <div style="margin:5%;">
-      <h3>Manual</h3>
-      <p><b>Knottingham</b> is a tool that lets you draw and manipulate knot diagrams, sporting a clean yet somewhat hand-drawn look. To start knotting away, you may want to follow these steps:</p>
+    <div style="margin:1%;">
+      <div style="display: grid;grid-template-columns: 1.5fr 1fr;align-items: center;">
+        <p><b>Alexander Polynomial:</b> <span id="alexanderPolynomial"></span></p>
+        <p style="display:none;" id="linkingContainer"><b>Linking Numbers:</b> <span id="linkingNumbers"
+            style="font-family: monospace;"></span></p>
+        <p style="display:none;" id="jonesContainer"><b>Jones Polynomial:</b> <span id="jonesPolynomial"></span></p>
+        <p style="display:none;" id="homflyContainer"><b>HOMFLY Polynomial:</b> <span id="homflyPolynomial"
+            style="font-family:monospace;"></span></p>
+        <p><b>Gauss</b>: <span id="gauss" style="font-family: monospace;"></span> <br> <b>Dowker-Thislethwaite</b>:
+          <span id="dt" style="font-family: monospace;"></span></p>
+        <p id="candidates-p"><b><!--Candidates with  \(<10\) Crossings:--></b> <span id="candidates"></span></p>
+      </div>
+
+      <hr>
+      <p>
+        <button type="button"
+          onclick="window.globals.draw(); isomorphy.checked = false; smoothing.checked = false; window.globals.switchIsomorphy(); window.globals.isomorphy = false;"><b>Draw
+            from Scratch</b></button>
+        <button type="button"
+          onclick="window.globals.drawLink(); isomorphy.checked = false; smoothing.checked = false; window.globals.switchIsomorphy(); window.globals.isomorphy = false;"><b>Add
+            Component</b></button>
+        <button type="button" onclick="window.globals.select()">Show / Hide Bezier Handles</button>
+        <button type="button" onclick="window.globals.undo()">Undo</button>
+        <button type="button" onclick="window.globals.reflect()">Reflect</button>
+      </p>
+
+      <p>Force Smoothness: <input id="smoothing" type="checkbox" checked="true"
+          onchange="window.globals.smooth = this.checked;">
+        | <button type="button" onclick="straighten()">Straighten</button>
+        <!--  <button type="button" onclick="flatten()">Flatten</button> -->
+        <button type="button" onclick="window.globals.simplify()">Simplify</button>
+        <button type="button" onclick="window.globals.makeAlternating()">Make Alternating</button>
+        <button type="button" onclick="orthogonalise(this, dt.innerHTML, 'DT', 'Orthogonalize', 'Error')"
+          id="orthButton">Orthogonalize (slow)</button> <br>
+
+      </p>
+
+      <p>Drag Neighboring Points: <input id="dragging" type="checkbox" checked="false"
+          onchange="window.globals.neighbors = this.checked ? 2 : 0;"> | <b>Try reverting Non-Reidemeister moves:</b>
+        <input type="checkbox" id="isomorphy" checked="true" ,
+          onchange="window.globals.isomorphy = this.checked; window.globals.switchIsomorphy();"></p>
+
+      <p>
+        Additional Invariants, calculated once: <button type="button" onclick="getJones()" id="jonesButton">Jones
+          Polynomial</button>
+        <button type="button" onclick="getHomfly()" id="homflyButton">HOMFLY Polynomial</button>
+      </p>
+      <p><b>Styling:</b><br>
+        Gap Width: <input type="range" min="2" max="5" value="2" step="0.1" class="slider"
+          onchange="window.globals.gapWidth = this.value; window.globals.updateStyle();"><br>
+        Stroke Width: <input type="range" min="1" max="10" value="3" step="0.1" class="slider"
+          onchange="window.globals.strokeWidth = this.value; window.globals.updateStyle();"><br>
+        Show Intersections: <input type="checkbox" id="showIntersections"
+          onchange="window.globals.showIntersections = this.checked;">
+        Drag Handles Independently: <input type="checkbox" id="dragIndependently"
+          onchange="window.globals.independentHandles = this.checked;">
+
+      </p>
+      <hr>
+
+      <p><b>Exporting:</b>
+        <button type="button" onclick="toSVG();">To SVG</button>
+        <button type="button" onclick="toJSON();">To JSON</button>
+        <button type="button" onclick="toTikz(); this.innerHTML='Export to TikZ (Copied to Clipboard!);'">To
+          TikZ</button> <br>
+        <b>Importing:</b>
+        <button
+          onclick="orthogonalise(this, dtInput.value, 'DT', 'From DT code:', 'Error: Try again in the format `x y z ...`');">From
+          DT code:</button> <input type="text" id="dtInput" placeholder="4 6 2">
+        <button
+          onclick="orthogonalise(this, rolfsenInput.value, 'Rolfsen', 'From Rolfsen Table:', 'Error: Try again in the format x_y');">From
+          Rolfsen Table:</button> <input type="text" id="rolfsenInput" placeholder="10_161">
+      <p>From Knottingham JSON: </p><input type="file" id="file" accept=".JSON,.json,.knottingham"
+        name="Load a Knottingham JSON file" oninput="readJSON(this.files[0])">
+
+      </p>
+    </div>
+  </div>
+
+  <div style="margin:5%;">
+    <h3>Manual</h3>
+    <p><b>Knottingham</b> is a tool that lets you draw and manipulate knot diagrams, sporting a clean yet somewhat
+      hand-drawn look. To start knotting away, you may want to follow these steps:</p>
+    <ul>
+      <li>Create a knot by:</li>
       <ul>
-        <li>Create a knot by:</li>
-        <ul>
-          <li>Clicking on segments to add new nodes</li>
-          <li>Clicking and dragging nodes to move them (you can use 'Drag Neighbors' to rescue nodes from below crossings)</li>
-          <li>and finally <b>clicking on the (red) crossings to switch them</b> (with "try reverting Non-Reidemeister moves" turned off)</li>
-          <li>or importing JSON</li>
-          <li><b>or clicking on 'Drawing' to draw a new knot from scratch</b>!</li>
-        </ul>
-        <li>Adjust the knot by:</li>
-        <ul>
-          <li>Removing nodes with <b>Shift+Click</b></li>
-          <li>Smoothing segments with <b>Control+Click</b></li>
-          <li>Moving, rotating and mirroring the knot with the <b>WASD+EQ+M</b> keys</li>
-          <li>Undoing with the <b>Z</b> key</li>
-          <li>Selecting it through the select button and adjust Bezier handles</li>
-          <li>Creating a <b>minimal-bend diagram</b> on the integer grid with the button "Orthogonalize". You can follow up with:</li>
-          <li>Forcing smoothness (twice continuous differentiability, to be precise)</li>
-          <li>Adjusting the style with the sliders</li>
-        </ul>
-        <li> Show the knot to your friends by:
-          <ul>
-            <li>Exporting it to SVG!</li>
-            <li>Exporting it to JSON, to be imported back into Knottingham!</li>
-            <li>Exporting it to TikZ! (Fully customizable, but without crossing Info)</li>
-          </ul>
+        <li>Clicking on segments to add new nodes</li>
+        <li>Clicking and dragging nodes to move them (you can use 'Drag Neighbors' to rescue nodes from below crossings)
         </li>
+        <li>and finally <b>clicking on the (red) crossings to switch them</b> (with "try reverting Non-Reidemeister
+          moves" turned off)</li>
+        <li>or importing JSON</li>
+        <li><b>or clicking on 'Drawing' to draw a new knot from scratch</b>!</li>
+        <li>Turning it into a <b>link</b> by clicking on 'Add Component' and drawing further closed curves</li>
       </ul>
+      <li>Adjust the knot by:</li>
+      <ul>
+        <li>Removing nodes with <b>Shift+Click</b></li>
+        <li>Smoothing segments with <b>Control+Click</b></li>
+        <li>Moving and rotating the selected component with the <b>WASD+EQ</b> keys (handy for arranging links),
+          mirroring everything with <b>M</b></li>
+        <li>Undoing with the <b>Z</b> key</li>
+        <li>Selecting it through the select button and adjust Bezier handles</li>
+        <li>Creating a <b>minimal-bend diagram</b> on the integer grid with the button "Orthogonalize". You can follow
+          up with:</li>
+        <li>Forcing smoothness (twice continuous differentiability, to be precise)</li>
+        <li>Adjusting the style with the sliders</li>
+      </ul>
+      <li> Show the knot to your friends by:
+        <ul>
+          <li>Exporting it to SVG!</li>
+          <li>Exporting it to JSON, to be imported back into Knottingham!</li>
+          <li>Exporting it to TikZ! (No support for crossing information yet, to adjust it in the final TikZ render, use the flipcrossings or the flip crossing key as documented in the knots package. Import tikz and the tikz package knots to use.)</li>
+        </ul>
+      </li>
+    </ul>
 
-      Knottingham can also try <b>detecting non-Reidemeister moves</b>! Check the corresponding box and start thinking through knot equivalences. Discontious operations like smoothing or deleting segments might lead to breaking the equivalence.
+    Knottingham can also try <b>detecting non-Reidemeister moves</b>! Check the corresponding box and start thinking
+    through knot equivalences. Discontious operations like smoothing or deleting segments might lead to breaking the
+    equivalence.
 
-      <h3>How does it work?</h3>
-      <p>You can read all about that in our preprint about Knottingham <a href="https://arxiv.org/abs/2309.00445">here</a> or the finished paper in the <a href="https://ieeexplore.ieee.org/document/10538424"><i>IEEE Transactions on Visualization and Computer Graphics</i></a>.
+    <p>Multi-component <b>links</b> can be drawn with 'Add Component' or imported by name (for example <code>L6a4</code>
+      in the Rolfsen field). For links, a per-component Gauss code and the pairwise linking numbers are shown, and the
+      Jones and HOMFLY polynomials as well as orthogonalization work through the diagram's PD code. The Alexander
+      polynomial and the Dowker-Thistlethwaite code are only computed for knots so far.</p>
+
+    <h3>How does it work?</h3>
+    <p>You can read all about that in our preprint about Knottingham <a href="https://arxiv.org/abs/2309.00445">here</a>
+      or the finished paper in the <a href="https://ieeexplore.ieee.org/document/10538424"><i>IEEE Transactions on
+          Visualization and Computer Graphics</i></a>.
       If Knottingham helped you with your research or teaching, we are very happy to be cited as
-      <div style="border: 1px solid; border-radius:15px; background-color: #411; color: rgb(218, 208, 213);">
-        <code ><pre>
+    <div style="border: 1px solid; border-radius:15px; background-color: #411; color: rgb(218, 208, 213);">
+      <code><pre>
           @article{finke2024,
             author={Finke, Lennart and Weitz, Edmund},
             journal={IEEE Transactions on Visualization and Computer Graphics}, 
@@ -130,14 +170,16 @@
             number={8},
             pages={5901-5907},
             doi={10.1109/TVCG.2024.3405369}}</pre></code>
-      </div>
-      
-      </p>
-      
+    </div>
 
-      The Jones and HOMFLY polynomial are calculated with <a href="https://sagecell.sagemath.org/">SageCellMath</a>. To help them cover server costs incurred through websites like this, they accept contributions and donations <a href="https://github.com/sponsors/sagemath">here</a>.
-      <br>
-      <!--
+    </p>
+
+
+    The Jones and HOMFLY polynomial are calculated with <a href="https://sagecell.sagemath.org/">SageCellMath</a>. To
+    help them cover server costs incurred through websites like this, they accept contributions and donations <a
+      href="https://github.com/sponsors/sagemath">here</a>.
+    <br>
+    <!--
       These features could arrive in a future version:
       <ul>
         <li>Proven Non-Reidemeister Move-Detection</li>
@@ -145,11 +187,14 @@
         <li>Redoing</li>
       </ul>
       -->
-      <p>Any and all feedback is appreciated! You can mail to <a href="mailto:developer/at/fi-le.net">developer/at/fi-le.net</a>. <br> Knottingham is open source - you can read and contribute to the code over <a href="https://github.com/file-acomplaint/knottingham">here</a>.</p>
-    </div>
-    
-     <script src="main.js"></script>
-      <script src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
-      
+    <p>Any and all feedback is appreciated! You can mail to <a
+        href="mailto:developer/at/fi-le.net">developer/at/fi-le.net</a>. <br> Knottingham is open source - you can read
+      and contribute to the code over <a href="https://github.com/file-acomplaint/knottingham">here</a>.</p>
+  </div>
+
+  <script src="main.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
+
 </body>
+
 </html>
